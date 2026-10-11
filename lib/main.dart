@@ -445,39 +445,85 @@ class _PortfolioPageState extends State<PortfolioPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ScrollScope(
-        controller: _scroll,
-        child: Stack(
-          children: [
-            const Positioned.fill(child: _Backdrop()),
-            SingleChildScrollView(
-              controller: _scroll,
-              child: Column(
-                children: [
-                  KeyedSubtree(
-                    key: _keys['Home'],
-                    child: HeroSection(
-                      onProjects: () => _goTo('Projects'),
-                      onContact: () => _goTo('Contact'),
-                    ),
+      body: ValueListenableBuilder<Size?>(
+        valueListenable: previewSize,
+        builder: (context, selectedSize, _) {
+          final screenSize = MediaQuery.sizeOf(context);
+          final previewWidth = selectedSize?.width ?? screenSize.width;
+
+          return Center(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: selectedSize == null
+                    ? const NeverScrollableScrollPhysics()
+                    : const ClampingScrollPhysics(),
+                child: _DeviceFrame(
+                  size: selectedSize,
+                  isPreview: selectedSize != null &&
+                      MediaQuery.sizeOf(context).width >= 1100,
+                  child: SizedBox(
+                    width: previewWidth,
+                    child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  size: Size(
+                    previewWidth,
+                    selectedSize?.height ?? screenSize.height,
                   ),
-                  KeyedSubtree(key: _keys['Projects'], child: const ProjectsSection()),
-                  KeyedSubtree(key: _keys['Experience'], child: const ExperienceSection()),
-                  KeyedSubtree(key: _keys['Skills'], child: const SkillsSection()),
-                  const BackgroundSection(),
-                  KeyedSubtree(key: _keys['Contact'], child: const ContactSection()),
-                  const Footer(),
-                ],
+                ),
+                child: ScrollScope(
+                  controller: _scroll,
+                  child: Stack(
+                    children: [
+                      const Positioned.fill(child: _Backdrop()),
+                      SingleChildScrollView(
+                        controller: _scroll,
+                        child: Column(
+                          children: [
+                            KeyedSubtree(
+                              key: _keys['Home'],
+                              child: HeroSection(
+                                onProjects: () => _goTo('Projects'),
+                                onContact: () => _goTo('Contact'),
+                              ),
+                            ),
+                            KeyedSubtree(
+                              key: _keys['Projects'],
+                              child: const ProjectsSection(),
+                            ),
+                            KeyedSubtree(
+                              key: _keys['Experience'],
+                              child: const ExperienceSection(),
+                            ),
+                            KeyedSubtree(
+                              key: _keys['Skills'],
+                              child: const SkillsSection(),
+                            ),
+                            const BackgroundSection(),
+                            KeyedSubtree(
+                              key: _keys['Contact'],
+                              child: const ContactSection(),
+                            ),
+                            const Footer(),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: SafeArea(
+                          child: NavBar(onNavigate: _goTo),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(child: NavBar(onNavigate: _goTo)),
-            ),
-          ],
-        ),
+              ),
+              ),
+          );
+        },
       ),
     );
   }
@@ -1072,6 +1118,8 @@ class NavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mobile = context.isMobile;
+    final actualBrowserWidth = MediaQuery.sizeOf(context).width;
+    final isDesktopBrowser = actualBrowserWidth >= 1100;
     final c = context.c;
     return Padding(
       padding: EdgeInsets.fromLTRB(mobile ? 12 : 24, 12, mobile ? 12 : 24, 0),
@@ -1090,7 +1138,7 @@ class NavBar extends StatelessWidget {
                   for (final n in navItems) _NavLink(label: n, onTap: () => onNavigate(n)),
                   const SizedBox(width: 8),
                 ],
-                if (!mobile) ...[
+                if (isDesktopBrowser) ...[
                   const _DevicePreviewToggle(),
                   const SizedBox(width: 8),
                 ],
@@ -1225,43 +1273,189 @@ class _ThemeToggle extends StatelessWidget {
 class _DevicePreviewToggle extends StatelessWidget {
   const _DevicePreviewToggle();
 
+  static const devices = <({
+  String label,
+  String value,
+  Size? size,
+  IconData icon,
+  })>[
+    (
+    label: 'Desktop',
+    value: 'desktop',
+    size: Size(1440, 900),
+    icon: Icons.desktop_windows_rounded,
+    ),
+    (
+    label: 'Tablet',
+    value: 'tablet',
+    size: Size(768, 1024),
+    icon: Icons.tablet_rounded,
+    ),
+    (
+    label: 'Mobile',
+    value: 'mobile',
+    size: Size(390, 844),
+    icon: Icons.smartphone_rounded,
+    ),
+    (
+    label: 'Actual Viewport',
+    value: 'actual',
+    size: null,
+    icon: Icons.fit_screen_rounded,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
 
-    return PopupMenuButton<Size?>(
-      tooltip: 'Preview on different devices',
-      onSelected: (size) => previewSize.value = size,
-      itemBuilder: (context) => [
-        const PopupMenuItem<Size?>(
-          value: Size(1440, 900),
-          child: Text('Desktop'),
-        ),
-        const PopupMenuItem<Size?>(
-          value: Size(768, 1024),
-          child: Text('Tablet'),
-        ),
-        const PopupMenuItem<Size?>(
-          value: Size(390, 844),
-          child: Text('Mobile'),
-        ),
-        const PopupMenuDivider(),
-        const PopupMenuItem<Size?>(
-          value: null,
-          child: Text('Actual Viewport'),
-        ),
-      ],
+    return ValueListenableBuilder<Size?>(
+      valueListenable: previewSize,
+      builder: (context, selectedSize, _) {
+        return PopupMenuButton<String>(
+          tooltip: 'Preview viewport',
+          color: c.surface,
+          surfaceTintColor: Colors.transparent,
+          elevation: 12,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: c.border),
+          ),
+          onSelected: (value) {
+            final device = devices.firstWhere(
+                  (device) => device.value == value,
+            );
+            previewSize.value = device.size;
+          },
+          itemBuilder: (context) => [
+            for (final device in devices)
+              PopupMenuItem<String>(
+                value: device.value,
+                child: Row(
+                  children: [
+                    Icon(
+                      device.icon,
+                      size: 19,
+                      color: selectedSize == device.size
+                          ? c.accent
+                          : c.textMuted,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        device.label,
+                        style: body(
+                          context,
+                          13.5,
+                          weight: FontWeight.w600,
+                          color: selectedSize == device.size
+                              ? c.accent
+                              : c.text,
+                        ),
+                      ),
+                    ),
+                    if (selectedSize == device.size)
+                      Icon(
+                        Icons.check_rounded,
+                        size: 17,
+                        color: c.accent,
+                      ),
+                  ],
+                ),
+              ),
+          ],
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selectedSize != null
+                  ? c.accent.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              border: Border.all(
+                color: selectedSize != null ? c.accent : c.border,
+              ),
+            ),
+            child: Icon(
+              Icons.devices_rounded,
+              size: 19,
+              color: selectedSize != null ? c.accent : c.text,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Device preview frame
+// ---------------------------------------------------------------------------
+
+class _DeviceFrame extends StatelessWidget {
+  const _DeviceFrame({
+    required this.size,
+    required this.isPreview,
+    required this.child,
+  });
+
+  final Size? size;
+  final bool isPreview;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isPreview) return child;
+
+    final isMobile = size!.width <= 400;
+    final isTablet = size!.width > 400 && size!.width < 1100;
+
+    final radius = isMobile ? 42.0 : isTablet ? 30.0 : 18.0;
+    final frameColor = const Color(0xFF252833);
+    final padding = isMobile ? 10.0 : isTablet ? 12.0 : 8.0;
+
+    return Center(
       child: Container(
-        width: 40,
-        height: 40,
+        margin: const EdgeInsets.all(28),
+        padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: c.border),
+          color: frameColor,
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(
+            color: const Color(0xFF454A57),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 45,
+              offset: const Offset(0, 22),
+            ),
+          ],
         ),
-        child: Icon(
-          Icons.devices_rounded,
-          size: 19,
-          color: c.text,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(radius - padding),
+          child: Stack(
+            children: [
+              child,
+              if (isMobile)
+                Positioned(
+                  top: 7,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      width: 75,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: frameColor,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
