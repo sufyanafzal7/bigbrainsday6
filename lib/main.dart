@@ -1415,48 +1415,59 @@ class _DeviceFrame extends StatelessWidget {
     final padding = isMobile ? 10.0 : isTablet ? 12.0 : 8.0;
 
     return Center(
-      child: Container(
-        margin: const EdgeInsets.all(28),
-        padding: EdgeInsets.all(padding),
-        decoration: BoxDecoration(
-          color: frameColor,
-          borderRadius: BorderRadius.circular(radius),
-          border: Border.all(
-            color: const Color(0xFF454A57),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 45,
-              offset: const Offset(0, 22),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            margin: const EdgeInsets.all(28),
+            padding: EdgeInsets.all(padding),
+            decoration: BoxDecoration(
+              color: frameColor,
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(
+                color: const Color(0xFF454A57),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 45,
+                  offset: const Offset(0, 22),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(radius - padding),
-          child: Stack(
-            children: [
-              child,
-              if (isMobile)
-                Positioned(
-                  top: 7,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      width: 75,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: frameColor,
-                        borderRadius: BorderRadius.circular(20),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(radius - padding),
+              child: Stack(
+                children: [
+                  child,
+                  if (isMobile)
+                    Positioned(
+                      top: 7,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          width: 75,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            color: frameColor,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
+          if (isMobile || isTablet)
+            const Positioned(
+              top: 28,
+              right: -12,
+              child: _DevicePreviewToggle(),
+            ),
+        ],
       ),
     );
   }
